@@ -2,11 +2,13 @@ const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
+const cors = require('cors');
+
 app.use(express.json()); // Parse JSON request bodies
+app.use(cors());
 
 // MongoDB connection setup
-const connect_string = process.env.URI
-const uri = connect_string;
+const uri = "mongodb+srv://admin4321:iceberginflorida@cluster0.7nzmtv3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
