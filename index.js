@@ -25,6 +25,12 @@ app.post('/api/register', async (req, res) => {
     const database = client.db('chatdatagen');
     const auth = database.collection('auth');
 
+    // Check if user with provided email already exists
+    const existingUser = await auth.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists. Please login instead.' });
+    }
+
     // Insert the user's registration data into the 'auth' collection
     const result = await auth.insertOne(req.body);
 
