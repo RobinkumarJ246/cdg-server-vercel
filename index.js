@@ -50,13 +50,13 @@ const transporter = nodemailer.createTransport({
 });
 
 // Function to send custom email
-const sendCustomEmail = (toEmail, subject, text) => {
+const sendCustomEmail = (toEmail, subject, htmlContent) => {
   // Email options
   const mailOptions = {
     from: 'innovatexcel.team@gmail.com', // Sender address
     to: toEmail, // Recipient address
     subject: subject, // Subject line
-    html:htmlContent, // Plain text body
+    html: htmlContent, // HTML content
   };
 
   // Send email
