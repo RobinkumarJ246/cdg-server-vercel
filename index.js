@@ -71,13 +71,19 @@ const sendCustomEmail = (toEmail, subject, text) => {
 
 // Define route for sending email
 app.post('/api/welcome-mail', (req, res) => {
-  const { toEmail, subject, htmlContent } = req.body;
+  try {
+    const { toEmail, subject, htmlContent } = req.body;
+    console.log('Request body:', req.body); // Log the request body
 
-  // Send the email
-  sendCustomEmail(toEmail, subject, htmlContent);
+    // Send the email
+    sendCustomEmail(toEmail, subject, htmlContent);
 
-  // Respond with a success message
-  res.status(200).json({ message: 'Email sent successfully' });
+    // Respond with a success message
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (err) {
+    console.error('Error sending welcome email:', err);
+    res.status(500).json({ error: 'An error occurred while sending the welcome email' });
+  }
 });
 
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
