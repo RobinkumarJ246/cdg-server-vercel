@@ -140,6 +140,35 @@ app.post('/api/save-room', async (req, res) => {
   }
 });
 
+// Join room route
+app.post('/api/join-room', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
+
+    // Find the room in the 'rooms' collection
+    const room = await rooms.findOne({ roomCode: req.body.roomCode });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    // Check if the provided password matches the stored password
+    if (room.password !== req.body.password) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    // Room validation successful
+    res.status(200).json({ message: 'Room joined successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred during room joining' });
+  } finally {
+    await client.close();
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
