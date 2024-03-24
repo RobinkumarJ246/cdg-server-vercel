@@ -121,6 +121,25 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Save room details route
+app.post('/api/save-room', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
+
+    // Insert the room details into the 'rooms' collection
+    const result = await rooms.insertOne(req.body);
+
+    res.status(200).json({ message: 'Room details saved successfully', insertedId: result.insertedId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while saving the room details' });
+  } finally {
+    await client.close();
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
