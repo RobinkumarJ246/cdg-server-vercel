@@ -102,6 +102,16 @@ app.all('/api/ping', (req, res) => {
   }
 });
 
+// Define route for HEAD PING
+app.head('/api/ping', (req, res) => {
+  try {
+      res.status(200).end();  // End the response without sending any content
+  } catch (err) {
+      console.error('Error:', err);
+      res.status(500).json({ error: 'An error occurred while pinging' });
+  }
+});
+
 // Login route
 app.post('/api/login', async (req, res) => {
   try {
