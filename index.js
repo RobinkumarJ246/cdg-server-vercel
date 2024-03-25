@@ -238,20 +238,38 @@ app.get('/api/online-users/:code', (req, res) => {
 let chatRooms = {};
 
 // New route to handle sending and receiving messages
+// Send message route
 app.post('/api/send-message', async (req, res) => {
   try {
-    const { roomCode, sender, message } = req.body;
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
 
-    if (!chatRooms[roomCode]) {
-      chatRooms[roomCode] = [];
+    const { roomCode, sender, message, reply } = req.body;
+
+    // Check if room exists
+    const room = await rooms.findOne({ roomCode });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    chatRooms[roomCode].push({ sender, message });
+    // Add message and reply to the room
+    if (!room.msgdata) {
+      room.msgdata = [];
+    }
+
+    room.msgdata.push({ msg: { sender, content: message }, reply: { sender: null, content: reply } });
+
+    // Update the room with the new message and reply
+    await rooms.updateOne({ roomCode }, { $set: { msgdata: room.msgdata } });
 
     res.status(200).json({ message: 'Message sent successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while sending the message' });
+  } finally {
+    await client.close();
   }
 });
 
