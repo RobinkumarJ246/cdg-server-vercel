@@ -237,7 +237,6 @@ app.get('/api/online-users/:code', (req, res) => {
 
 let chatRooms = {};
 
-// New route to handle sending and receiving messages
 // Send message route
 app.post('/api/send-message', async (req, res) => {
   try {
@@ -245,7 +244,7 @@ app.post('/api/send-message', async (req, res) => {
     const database = client.db('chatdatagen');
     const rooms = database.collection('rooms');
 
-    const { roomCode, sender, message, reply } = req.body;
+    const { roomCode, sender, message } = req.body;
 
     // Check if room exists
     const room = await rooms.findOne({ roomCode });
@@ -254,14 +253,14 @@ app.post('/api/send-message', async (req, res) => {
       return res.status(404).json({ error: 'Room not found' });
     }
 
-    // Add message and reply to the room
+    // Add message to the room
     if (!room.msgdata) {
       room.msgdata = [];
     }
 
-    room.msgdata.push({ msg: { sender, content: message }, reply: { sender: null, content: reply } });
+    room.msgdata.push({ sender, content: message });
 
-    // Update the room with the new message and reply
+    // Update the room with the new message
     await rooms.updateOne({ roomCode }, { $set: { msgdata: room.msgdata } });
 
     res.status(200).json({ message: 'Message sent successfully' });
@@ -278,14 +277,23 @@ app.get('/api/get-messages/:code', async (req, res) => {
   try {
     const code = req.params.code;
     
-    if (!chatRooms[code]) {
-      chatRooms[code] = [];
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
+
+    // Find the room with the provided room code
+    const room = await rooms.findOne({ roomCode: code });
+
+    if (!room || !room.msgdata) {
+      return res.status(404).json({ error: 'No messages found for this room' });
     }
 
-    res.status(200).json({ messages: chatRooms[code] });
+    res.status(200).json({ messages: room.msgdata });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while fetching messages' });
+  } finally {
+    await client.close();
   }
 });
 
