@@ -92,6 +92,16 @@ app.post('/api/welcome-mail', (req, res) => {
   }
 });
 
+// Define route for PING
+app.post('/api/ping', (req, res) => {
+  try {
+  res.status(200).json({ message: '200 OK' });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'An error occurred while pinging' });
+  }
+});
+
 // Login route
 app.post('/api/login', async (req, res) => {
   try {
