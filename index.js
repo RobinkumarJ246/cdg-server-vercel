@@ -219,6 +219,22 @@ app.get('/api/check-auth/:roomCode', async (req, res) => {
   }
 });
 
+// Get online users in a room route
+app.get('/api/online-users/:code', (req, res) => {
+  try {
+    const code = req.params.code;
+    
+    if (!onlineUsers[code]) {
+      onlineUsers[code] = [];
+    }
+
+    res.status(200).json({ onlineUsers: onlineUsers[code] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching online users' });
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
