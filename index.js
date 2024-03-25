@@ -235,6 +235,42 @@ app.get('/api/online-users/:code', (req, res) => {
   }
 });
 
+let chatRooms = {};
+
+// New route to handle sending and receiving messages
+app.post('/api/send-message', async (req, res) => {
+  try {
+    const { roomCode, sender, message } = req.body;
+
+    if (!chatRooms[roomCode]) {
+      chatRooms[roomCode] = [];
+    }
+
+    chatRooms[roomCode].push({ sender, message });
+
+    res.status(200).json({ message: 'Message sent successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while sending the message' });
+  }
+});
+
+// New route to fetch chat messages for a room
+app.get('/api/get-messages/:code', async (req, res) => {
+  try {
+    const code = req.params.code;
+    
+    if (!chatRooms[code]) {
+      chatRooms[code] = [];
+    }
+
+    res.status(200).json({ messages: chatRooms[code] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching messages' });
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
