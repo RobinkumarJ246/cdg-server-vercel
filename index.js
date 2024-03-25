@@ -93,7 +93,7 @@ app.post('/api/welcome-mail', (req, res) => {
 });
 
 // Define route for PING
-app.post('/api/ping', (req, res) => {
+app.all('/api/ping', (req, res) => {
   try {
   res.status(200).json({ message: '200 OK' });
   } catch (err) {
