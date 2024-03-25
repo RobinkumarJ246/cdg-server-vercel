@@ -169,6 +169,35 @@ app.post('/api/join-room', async (req, res) => {
   }
 });
 
+// Check room authentication route
+app.get('/api/check-auth/:roomCode', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
+
+    // Find the room with the provided room code
+    const room = await rooms.findOne({ roomCode: req.params.roomCode });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    // Check if the user is authenticated
+    if (!req.headers.authorization || req.headers.authorization !== room.password) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Authentication successful
+    res.status(200).json({ message: 'Authentication successful' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred during authentication' });
+  } finally {
+    await client.close();
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
