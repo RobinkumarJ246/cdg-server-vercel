@@ -140,32 +140,53 @@ app.post('/api/save-room', async (req, res) => {
   }
 });
 
+let onlineUsers = {};
+
 // Join room route
 app.post('/api/join-room', async (req, res) => {
   try {
+    const { roomCode, userEmail } = req.body;
     await client.connect();
     const database = client.db('chatdatagen');
     const rooms = database.collection('rooms');
 
     // Find the room in the 'rooms' collection
-    const room = await rooms.findOne({ roomCode: req.body.roomCode });
+    const room = await rooms.findOne({ roomCode });
 
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
 
-    // Check if the provided password matches the stored password
-    if (room.password !== req.body.password) {
-      return res.status(401).json({ error: 'Invalid password' });
+    // Update online users
+    if (!onlineUsers[roomCode]) {
+      onlineUsers[roomCode] = [];
     }
+    onlineUsers[roomCode].push(userEmail);
 
     // Room validation successful
-    res.status(200).json({ message: 'Room joined successfully' });
+    res.status(200).json({ message: 'Room joined successfully', onlineUsers: onlineUsers[roomCode] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred during room joining' });
   } finally {
     await client.close();
+  }
+});
+
+// Leave room route
+app.post('/api/leave-room', async (req, res) => {
+  try {
+    const { roomCode, userEmail } = req.body;
+
+    // Remove user from online users
+    if (onlineUsers[roomCode]) {
+      onlineUsers[roomCode] = onlineUsers[roomCode].filter(user => user !== userEmail);
+    }
+
+    res.status(200).json({ message: 'Left the room successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while leaving the room' });
   }
 });
 
