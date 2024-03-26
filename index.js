@@ -40,10 +40,75 @@ app.post('/api/register', async (req, res) => {
     // Insert the user's registration data into the 'auth' collection
     const result = await auth.insertOne(req.body);
 
+    // Generate a 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store the verification code with the email and expiration time
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 10); // Expires in 10 minutes
+
+    const emailvcodes = database.collection('emailvcodes');
+    await emailvcodes.insertOne({
+      email: req.body.email,
+      code: verificationCode,
+      expiresAt: expirationTime,
+    });
+
+    // Send the verification code via email
+    const subject = 'Email Verification Code';
+    const htmlContent = `
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification Code</title>
+      </head>
+      <body style="font-family: Arial, sans-serif;">
+        <header style="background-color: #f0f0f0; padding: 20px;">
+          <h1 style="margin: 0; color: #333;">Email Verification Code</h1>
+        </header>
+        <section style="padding: 20px;">
+          <p>Hello ${req.body.userName},</p>
+          <p>Your verification code is: <strong>${verificationCode}</strong></p>
+          <p>Please use this code to verify your email address within the next 10 minutes.</p>
+        </section>
+        <footer style="background-color: #f0f0f0; padding: 20px; text-align: center;">
+          <p style="margin: 0;">Best regards,<br> Innovatexcel team</p>
+        </footer>
+      </body>
+    `;
+
+    sendCustomEmail(req.body.email, subject, htmlContent);
+
     res.status(200).json({ message: 'Registration successful', insertedId: result.insertedId });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred during registration' });
+  } finally {
+    await client.close();
+  }
+});
+
+// Validate verification code
+app.post('/api/validate-verification-code', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const emailvcodes = database.collection('emailvcodes');
+
+    const { email, code } = req.body;
+
+    // Find the verification code from the database
+    const verification = await emailvcodes.findOne({ email, code });
+
+    if (!verification || new Date() > new Date(verification.expiresAt)) {
+      return res.status(400).json({ error: 'Invalid or expired verification code' });
+    }
+
+    res.status(200).json({ message: 'Verification code is valid' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while validating the verification code' });
   } finally {
     await client.close();
   }
@@ -318,54 +383,6 @@ app.get('/api/get-messages/:code', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while fetching messages' });
-  } finally {
-    await client.close();
-  }
-});
-
-// New route to send verification code
-app.post('/api/send-verification-code', async (req, res) => {
-  try {
-    await client.connect();
-    const database = client.db('chatdatagen');
-    const auth = database.collection('auth');
-
-    const { email } = req.body;
-
-    // Check if user with provided email exists
-    const existingUser = await auth.findOne({ email });
-    if (!existingUser) {
-      return res.status(400).json({ error: 'Email not found. Please register first.' });
-    }
-
-    // Generate verification code
-    const verificationCode = generateVerificationCode();
-
-    // Save the verification code with the email in the database
-    await auth.updateOne({ email }, { $set: { verificationCode, verificationCodeCreatedAt: new Date() } });
-
-    // Send the verification code to the user's email
-    const subject = 'Verification Code for ChatDataGen';
-    const htmlContent = `
-      <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Verify your email</title>
-      </head>
-      <body style="font-family: Arial, sans-serif;">
-        <h3>Your verification code is: <strong>${verificationCode}</strong></h3>
-        <p>This code is valid for 10 minutes.</p>
-      </body>
-      </html>
-    `;
-
-    sendCustomEmail(email, subject, htmlContent);
-
-    res.status(200).json({ message: 'Verification code sent successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'An error occurred while sending the verification code' });
   } finally {
     await client.close();
   }
