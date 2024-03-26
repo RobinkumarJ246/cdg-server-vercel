@@ -4,9 +4,15 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const cors = require('cors');
+const crypto = require('crypto');  // To generate random verification code
 
 app.use(express.json()); // Parse JSON request bodies
 app.use(cors());
+
+// Generate random verification code
+const generateVerificationCode = () => {
+  return crypto.randomBytes(3).toString('hex').toUpperCase();  // Generates a 6-character hex code
+};
 
 // MongoDB connection setup
 const uri = "mongodb+srv://admin4321:iceberginflorida@cluster0.7nzmtv3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -312,6 +318,54 @@ app.get('/api/get-messages/:code', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while fetching messages' });
+  } finally {
+    await client.close();
+  }
+});
+
+// New route to send verification code
+app.post('/api/send-verification-code', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const auth = database.collection('auth');
+
+    const { email } = req.body;
+
+    // Check if user with provided email exists
+    const existingUser = await auth.findOne({ email });
+    if (!existingUser) {
+      return res.status(400).json({ error: 'Email not found. Please register first.' });
+    }
+
+    // Generate verification code
+    const verificationCode = generateVerificationCode();
+
+    // Save the verification code with the email in the database
+    await auth.updateOne({ email }, { $set: { verificationCode, verificationCodeCreatedAt: new Date() } });
+
+    // Send the verification code to the user's email
+    const subject = 'Verification Code for ChatDataGen';
+    const htmlContent = `
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify your email</title>
+      </head>
+      <body style="font-family: Arial, sans-serif;">
+        <h3>Your verification code is: <strong>${verificationCode}</strong></h3>
+        <p>This code is valid for 10 minutes.</p>
+      </body>
+      </html>
+    `;
+
+    sendCustomEmail(email, subject, htmlContent);
+
+    res.status(200).json({ message: 'Verification code sent successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while sending the verification code' });
   } finally {
     await client.close();
   }
