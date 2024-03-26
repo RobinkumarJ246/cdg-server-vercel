@@ -388,6 +388,58 @@ app.get('/api/get-messages/:code', async (req, res) => {
   }
 });
 
+// Generate and send verification code
+app.post('/api/send-verification-code', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Generate a 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store the verification code with the email and expiration time
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 10); // Expires in 10 minutes
+
+    const emailvcodes = database.collection('emailvcodes');
+    await emailvcodes.insertOne({
+      email: email,
+      code: verificationCode,
+      expiresAt: expirationTime,
+    });
+
+    // Send the verification code via email
+    const subject = 'Email Verification Code';
+    const htmlContent = `
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification Code</title>
+      </head>
+      <body style="font-family: Arial, sans-serif;">
+        <header style="background-color: #f0f0f0; padding: 20px;">
+          <h1 style="margin: 0; color: #333;">Email Verification Code</h1>
+        </header>
+        <section style="padding: 20px;">
+          <p>Hello,</p>
+          <p>Your verification code is: <strong>${verificationCode}</strong></p>
+          <p>Please use this code to verify your email address within the next 10 minutes.</p>
+        </section>
+        <footer style="background-color: #f0f0f0; padding: 20px; text-align: center;">
+          <p style="margin: 0;">Best regards,<br> Innovatexcel team</p>
+        </footer>
+      </body>
+    `;
+
+    sendCustomEmail(email, subject, htmlContent);
+
+    res.status(200).json({ message: 'Verification code sent successfully' });
+  } catch (err) {
+    console.error('Error sending verification code:', err);
+    res.status(500).json({ error: 'An error occurred while sending the verification code' });
+  }
+});
+
 const PORT = process.env.PORT || 3000; // Use environment variable or fallback to 3000
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
