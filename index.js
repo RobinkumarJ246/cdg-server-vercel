@@ -7,12 +7,7 @@ const cors = require('cors');
 const crypto = require('crypto');  // To generate random verification code
 
 app.use(express.json()); // Parse JSON request bodies
-const corsOptions = {
-  origin: 'http://localhost:3000',
-  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Generate random verification code
 const generateVerificationCode = () => {
