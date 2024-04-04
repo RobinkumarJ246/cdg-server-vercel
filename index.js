@@ -95,6 +95,7 @@ app.post('/api/validate-verification-code', async (req, res) => {
     await client.connect();
     const database = client.db('chatdatagen');
     const emailvcodes = database.collection('emailvcodes');
+    const auth = database.collection('auth');
 
     const { email, code } = req.body;
 
@@ -105,7 +106,10 @@ app.post('/api/validate-verification-code', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired verification code' });
     }
 
-    res.status(200).json({ message: 'Verification code is valid' });
+    // Update the 'verifiedEmail' field to true in the 'auth' collection
+    await auth.updateOne({ email }, { $set: { verifiedEmail: true } });
+
+    res.status(200).json({ message: 'Email verification successful' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while validating the verification code' });
