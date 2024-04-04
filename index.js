@@ -71,6 +71,7 @@ app.post('/api/register', async (req, res) => {
           <p>Hello ${req.body.userName},</p>
           <p>Your verification code is: <strong>${verificationCode}</strong></p>
           <p>Please use this code to verify your email address within the next 10 minutes.</p>
+          <p>If you didnt request the code, please ignore this email</p>
         </section>
         <footer style="background-color: #f0f0f0; padding: 20px; text-align: center;">
           <p style="margin: 0;">Best regards,<br> Innovatexcel team</p>
@@ -184,6 +185,32 @@ app.head('/api/ping', (req, res) => {
   } catch (err) {
       console.error('Error:', err);
       res.status(500).json({ error: 'An error occurred while pinging' });
+  }
+});
+
+// Get username route
+app.get('/api/getUsername/:email', async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+    
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const auth = database.collection('auth');
+
+    // Find the user with the provided email in the 'auth' collection
+    const user = await auth.findOne({ email: userEmail });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Send the username
+    res.status(200).json({ username: user.userName });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching the username' });
+  } finally {
+    await client.close();
   }
 });
 
