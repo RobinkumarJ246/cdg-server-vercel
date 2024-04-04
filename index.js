@@ -327,7 +327,7 @@ app.get('/api/online-users/:code', (req, res) => {
 });
 
 let chatRooms = {};
-
+/*
 // Send message route
 app.post('/api/send-message', async (req, res) => {
   try {
@@ -386,7 +386,7 @@ app.get('/api/get-messages/:code', async (req, res) => {
   } finally {
     await client.close();
   }
-});
+}); */
 
 // Generate and send verification code
 app.post('/api/send-verification-code', async (req, res) => {
