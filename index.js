@@ -250,8 +250,17 @@ app.post('/api/save-room', async (req, res) => {
     const database = client.db('chatdatagen');
     const rooms = database.collection('rooms');
 
+    // Get the email from the localStorage
+    const ownerEmail = localStorage.getItem('email');
+
     // Insert the room details into the 'rooms' collection
     const result = await rooms.insertOne(req.body);
+
+    // Update the document to add the "owner" field
+    await rooms.updateOne(
+      { _id: result.insertedId },
+      { $set: { owner: ownerEmail } }
+    );
 
     res.status(200).json({ message: 'Room details saved successfully', insertedId: result.insertedId });
   } catch (err) {
@@ -261,6 +270,7 @@ app.post('/api/save-room', async (req, res) => {
     await client.close();
   }
 });
+
 
 let onlineUsers = {};
 
