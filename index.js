@@ -253,14 +253,17 @@ app.post('/api/save-room', async (req, res) => {
     // Get the email from the localStorage
     const ownerEmail = localStorage.getItem('email');
 
-    // Insert the room details into the 'rooms' collection
-    const result = await rooms.insertOne(req.body);
+    // Extract room details from request body
+    const { roomCode, roomName, password } = req.body;
 
-    // Update the document to add the "owner" field
-    await rooms.updateOne(
-      { _id: result.insertedId },
-      { $set: { owner: ownerEmail } }
-    );
+    // Create the room document
+    const result = await rooms.insertOne({
+      roomCode,
+      roomName,
+      password,
+      owner: ownerEmail,
+      onlineUsers: [ownerEmail]  // Initial onlineUsers array with owner email
+    });
 
     res.status(200).json({ message: 'Room details saved successfully', insertedId: result.insertedId });
   } catch (err) {
