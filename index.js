@@ -250,19 +250,16 @@ app.post('/api/save-room', async (req, res) => {
     const database = client.db('chatdatagen');
     const rooms = database.collection('rooms');
 
-    // Get the email from the localStorage
-    const ownerEmail = localStorage.getItem('email');
-
     // Extract room details from request body
-    const { roomCode, roomName, password } = req.body;
+    const { roomCode, roomName, password, email } = req.body;
 
     // Create the room document
     const result = await rooms.insertOne({
       roomCode,
       roomName,
       password,
-      owner: ownerEmail,
-      onlineUsers: [ownerEmail]  // Initial onlineUsers array with owner email
+      owner: email,
+      onlineUsers: [email]  // Initial onlineUsers array with owner email
     });
 
     res.status(200).json({ message: 'Room details saved successfully', insertedId: result.insertedId });
