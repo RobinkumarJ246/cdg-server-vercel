@@ -274,10 +274,11 @@ app.post('/api/save-room', async (req, res) => {
 
 let onlineUsers = {};
 
-// Join room route
 app.post('/api/join-room', async (req, res) => {
   try {
-    const { roomCode, userEmail } = req.body;
+    const { roomCode, password } = req.body;
+    const userEmail = req.headers.email; // Assuming email is passed in the headers
+
     await client.connect();
     const database = client.db('chatdatagen');
     const rooms = database.collection('rooms');
@@ -289,14 +290,25 @@ app.post('/api/join-room', async (req, res) => {
       return res.status(404).json({ error: 'Room not found' });
     }
 
-    // Update online users
-    if (!onlineUsers[roomCode]) {
-      onlineUsers[roomCode] = [];
+    // Check if the provided password matches the password field in the document
+    if (room.password !== password) {
+      return res.status(401).json({ error: 'Invalid Room Code or Password' });
     }
-    onlineUsers[roomCode].push(userEmail);
 
-    // Room validation successful
-    res.status(200).json({ message: 'Room joined successfully', onlineUsers: onlineUsers[roomCode] });
+    // Add the email to the onlineUsers array
+    const updatedOnlineUsers = [...room.onlineUsers, userEmail];
+
+    // Update the room document with the new onlineUsers array
+    const result = await rooms.updateOne(
+      { roomCode },
+      { $set: { onlineUsers: updatedOnlineUsers } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(500).json({ error: 'Failed to join the room' });
+    }
+
+    res.status(200).json({ message: 'Room joined successfully', onlineUsers: updatedOnlineUsers });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred during room joining' });
