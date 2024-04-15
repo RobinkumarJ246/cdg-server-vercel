@@ -385,22 +385,30 @@ app.get('/api/check-auth/:roomCode', async (req, res) => {
 });
 
 // Get online users in a room route
-app.get('/api/online-users/:code', (req, res) => {
+app.get('/api/online-users/:code', async (req, res) => {
   try {
     const code = req.params.code;
-    
-    if (!onlineUsers[code]) {
-      onlineUsers[code] = [];
+
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const rooms = database.collection('rooms');
+
+    // Find the room with the provided room code
+    const room = await rooms.findOne({ roomCode: code });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    res.status(200).json({ onlineUsers: onlineUsers[code] });
+    res.status(200).json({ onlineUsers: room.onlineUsers });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while fetching online users' });
+  } finally {
+    await client.close();
   }
 });
 
-let chatRooms = {};
 /*
 // Send message route
 app.post('/api/send-message', async (req, res) => {
