@@ -1,8 +1,15 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const nodemailer = require('nodemailer');
-
+const http = require('http');
+const { Server } = require('socket.io');
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  },
+});
 const cors = require('cors');
 const crypto = require('crypto');  // To generate random verification code
 
@@ -22,6 +29,56 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   }
+});
+
+let database;
+
+client.connect().then(() => {
+  console.log('Connected to MongoDB');
+  database = client.db('chatdatagen');
+}).catch(err => {
+  console.error('Error connecting to MongoDB:', err);
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+
+  socket.on('joinRoom', (roomCode) => {
+    socket.join(roomCode);
+  });
+
+  socket.on('sendMessage', async ({ roomCode, sender, message }) => {
+    try {
+      const rooms = database.collection('rooms');
+
+      // Check if room exists
+      const room = await rooms.findOne({ roomCode });
+
+      if (!room) {
+        return socket.emit('errorMessage', { error: 'Room not found' });
+      }
+
+      // Add message to the room
+      if (!room.msgdata) {
+        room.msgdata = [];
+      }
+
+      room.msgdata.push({ sender, content: message });
+
+      // Update the room with the new message
+      await rooms.updateOne({ roomCode }, { $set: { msgdata: room.msgdata } });
+
+      // Emit the message to all clients in the room
+      io.to(roomCode).emit('receiveMessage', { sender, message });
+    } catch (err) {
+      console.error('Error sending message:', err);
+      socket.emit('errorMessage', { error: 'An error occurred while sending the message' });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
 });
 
 // Register route
