@@ -272,7 +272,6 @@ app.post('/api/save-room', async (req, res) => {
 });
 
 
-let onlineUsers = {};
 
 app.post('/api/join-room', async (req, res) => {
   try {
