@@ -10,8 +10,16 @@ const io = new Server(server, {
     origin: '*',
   },
 });
+
 const cors = require('cors');
 const crypto = require('crypto');  // To generate random verification code
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+})
 
 app.use(express.json()); // Parse JSON request bodies
 app.use(cors());
