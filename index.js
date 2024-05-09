@@ -372,6 +372,8 @@ app.post('/api/join-room', async (req, res) => {
       return res.status(500).json({ error: 'Failed to join the room' });
     }
 
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
     res.status(200).json({ message: 'Room joined successfully', onlineUsers: updatedOnlineUsers });
   } catch (err) {
     console.error(err);
