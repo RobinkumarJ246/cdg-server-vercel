@@ -102,6 +102,12 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already exists. Please login instead.' });
     }
 
+    // Check if user with provided username already exists
+    const existingUsername = await auth.findOne({ userName: req.body.userName });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username already exists. Please choose another one.' });
+    }
+
     // Insert the user's registration data into the 'auth' collection
     const result = await auth.insertOne(req.body);
 
