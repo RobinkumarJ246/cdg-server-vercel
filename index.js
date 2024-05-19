@@ -260,6 +260,32 @@ app.head('/api/ping', (req, res) => {
 });
 
 // Get username route
+app.get('/api/getDisplayname/:email', async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+    
+    await client.connect();
+    const database = client.db('chatdatagen');
+    const auth = database.collection('auth');
+
+    // Find the user with the provided email in the 'auth' collection
+    const user = await auth.findOne({ email: userEmail });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Send the username
+    res.status(200).json({ displayname: user.displayName });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching the diplayname' });
+  } finally {
+    await client.close();
+  }
+});
+
+// Get username route
 app.get('/api/getUsername/:email', async (req, res) => {
   try {
     const userEmail = req.params.email;
